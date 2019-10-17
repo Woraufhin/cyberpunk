@@ -8,6 +8,8 @@ from tilemap import Board, Grid
 from utils import draw_text
 from player import HumanPlayer, RandomAI
 from pieces import Color
+from panels.move import MovePanel
+from panels.console import Console
 
 
 vec = pg.math.Vector2
@@ -37,6 +39,14 @@ class Game:
             game=self,
             pos=self.board.pos
         )
+        self.move_panel = MovePanel(
+            game=self,
+            pos=vec(20, 2)
+        )
+        self.console = Console(
+            game=self,
+            pos=vec(20, 13)
+        )
         self.players = {
             Color.white: RandomAI(Color.white),
             Color.black: HumanPlayer(Color.black)
@@ -58,6 +68,7 @@ class Game:
 
     def update(self):
         # update portion of the game loop
+        pass
         self.all_sprites.update()
 
     def draw_grid(self):
@@ -77,7 +88,7 @@ class Game:
             surf=self.screen,
             text='AI Wars',
             size=64,
-            pos=vec(7 * s.TILESIZE, 0)
+            pos='midtop'
         )
         pg.display.flip()
 

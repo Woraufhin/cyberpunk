@@ -51,9 +51,17 @@ class Console(Panel):
             LogType.INFO: replace(self.config, color=s.GREEN),
             LogType.WARNING: replace(self.config, color=s.YELLOW),
             LogType.ERROR: replace(self.config, color=s.RED),
-            LogType.DEBUG: replace(self.config, color=s.LIGHTBLUE)
+            LogType.DEBUG: replace(self.config, color=s.LIGHTBLUE),
+            LogType.CUSTOM: self.config
         }
 
     def log(self, text, level=LogType.INFO):
         self.history.append((level, text))
         self.tp.log(self.history, configs=self.level_configs)
+
+    def type(self, text):
+        self.tp.log(
+            text=[(LogType.CUSTOM, text)],
+            top_down=True,
+            configs=self.level_configs
+        )

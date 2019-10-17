@@ -83,13 +83,22 @@ class PlayerMenu:
                 surface=self.surface,
                 pos=Coords(x=8, y=2),
                 size=size,
-                text='human'
+                text='human',
+                desc="""A typical human scum. Tends to have 4 legs and a gender of her choice.
+
+They love to watch the fire burn and have Vietnam flashbacks."""
             ),
             SelectionButton(
                 surface=self.surface,
                 pos=Coords(x=8, y=3),
                 size=size,
-                text='random AI'
+                text='random AI',
+                desc="""Cute AI that shoots bullets in the dark.
+I\'m actually going to tell you what it does:
+
+   import random as r
+   r.choice(possible_moves)
+"""
             )
         ]
 

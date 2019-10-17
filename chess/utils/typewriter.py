@@ -19,6 +19,7 @@ class LogType(Enum):
     WARNING = 1
     INFO = 2
     DEBUG = 3
+    CUSTOM = 4
 
 
 @dataclass
@@ -60,6 +61,7 @@ class Typewriter:
         self.surface.blit(text_surf, text_rect)
 
     def log(self, text: List[Tuple['LogType', str]],
+            top_down: bool = False,
             configs: Dict['LogType', 'TypewriterConfig'] = None):
         """ Intelligently print within surface.
         This behaves as if surface were a normal console
@@ -67,20 +69,24 @@ class Typewriter:
         """
         max_w, max_h = self.surface.get_width(), self.surface.get_height() - self.line_size
         x, y = self.config.padding, max_h
+        if top_down:
+            x, y = self.config.padding, self.config.padding
         font = self.get_font(self.config.size, self.config.bold)
-
         # fill screen to re-draw
         self.surface.fill(self.config.surface_color)
-
-        for type, line in reversed(text):
+        text = self._process_newlines(text)
+        if not top_down:
+            text = reversed(text)
+        for type, line in text:
             try:
                 conf = configs[type]
             except IndexError:
                 conf = self.config
-            line_surface = font.render(line, True, conf.color)
-            line_width, line_height = line_surface.get_size()
-            lines_needed = int(math.ceil(line_width / (max_w - conf.padding * 2)))
-            y -= lines_needed * line_height
+            if not top_down:
+                line_surface = font.render(line, True, conf.color)
+                line_width, line_height = line_surface.get_size()
+                lines_needed = int(math.ceil(line_width / (max_w - conf.padding * 2)))
+                y -= lines_needed * line_height
             for word in line.split(' '):
                 word_surface = font.render(word, True, conf.color)
                 word_width, word_height = word_surface.get_size()
@@ -90,7 +96,19 @@ class Typewriter:
                 self.surface.blit(word_surface, (x, y))
                 x += word_width + self.space_size[0]
             x = conf.padding  # Reset the x.
-            y -= word_height * (lines_needed - 1)  # Calculate new offset position
+            if top_down:
+                y += word_height
+            else:
+                y -= word_height * (lines_needed - 1)  # Calculate new offset position
+
+    def _process_newlines(self, text):
+        new_text = []
+        for type, line in text:
+            if "\n" in line:
+                new_text.extend(map(lambda x: (type, x), line.split("\n")))
+            else:
+                new_text.append((type, line))
+        return new_text
 
     def position(self, text_rect, pos, coords):
         s_rect = self.surface.get_rect()

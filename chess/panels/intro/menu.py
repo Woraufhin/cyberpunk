@@ -22,6 +22,7 @@ class Menu(pg.sprite.Sprite):
     pos: 'Coords'
     size: 'Coords'
     console: Union[None, Type['chess.panels.console.Console']] = None
+    info_console: Union[None, Type['chess.panels.console.Console']] = None
     config: dict = field(default_factory=partial(defaultdict, dict))
 
     def __post_init__(self):
@@ -74,6 +75,8 @@ class Menu(pg.sprite.Sprite):
         for button in buttons:
             if button.rect.collidepoint(mpos):
                 button.hovering = True
+                if button.desc:
+                    self.info_console.type(button.desc)
             else:
                 button.hovering = False
             button.update()
@@ -83,21 +86,15 @@ class Menu(pg.sprite.Sprite):
         return [
             Button(
                 surface=self.image,
-                pos=Coords(x=1, y=1),
+                pos=Coords(x=1, y=8),
                 size=size,
                 text='PLAY'
             ),
             Button(
                 surface=self.image,
-                pos=Coords(x=1, y=8),
-                size=size,
-                text='CONFIG'
-            ),
-            Button(
-                surface=self.image,
                 pos=Coords(x=8,y=8),
                 size=size,
-                text='CREDITS'
+                text='CONFIG'
             ),
             Button(
                 surface=self.image,
@@ -116,3 +113,6 @@ class Menu(pg.sprite.Sprite):
 
     def set_console(self, console):
         self.console = console
+
+    def set_info_console(self, console):
+        self.info_console = console

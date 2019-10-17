@@ -36,6 +36,7 @@ class Intro(State):
     title: Union[None, 'Title'] = None
     menu: Union[None, 'Menu'] = None
     console: Union[None, 'Console'] = None
+    info_console: Union[None, 'Console'] = None
 
     def __post_init__(self):
         self.debug_draws = [
@@ -57,7 +58,7 @@ class Intro(State):
         )
         self.console = Console(
             sprite_group=self.sprites,
-            pos=Coords(x=s.GRIDWIDTH//2+4, y=7),
+            pos=Coords(x=6, y=7),
             size=Coords(x=6, y=6),
             color=s.WHITE,
             parent_color=s.DARKGREY,
@@ -76,7 +77,31 @@ class Intro(State):
                 padding=5
             )
         )
+        self.info_console = Console(
+            sprite_group=self.sprites,
+            pos=Coords(x=s.GRIDWIDTH//2+4, y=7),
+            size=Coords(x=6, y=6),
+            title='INFO',
+            color=s.WHITE,
+            parent_color=s.DARKGREY,
+            margin=6,
+            frame_offset=s.TILESIZE,
+            tp_config=TypewriterConfig(
+                padding=5,
+                size=22,
+                color=s.DARKGREEN,
+                surface_color=s.DARKGREY,
+                pos='midtop'
+            ),
+            config=TypewriterConfig(
+                surface_color=s.BLACK,
+                color=s.WHITE,
+                size=12,
+                padding=5
+            )
+        )
         self.menu.set_console(self.console)
+        self.menu.set_info_console(self.info_console)
 
     def update(self, screen, keys, current_time, dt):
         self.current_time = current_time / 1000
@@ -92,7 +117,6 @@ class Intro(State):
     def say_hi(self):
         for k, v in self.greet.items():
             if not v[0] and k < self.current_time:
-                logger.info(self.current_time)
                 v[0] = True
                 self.console.log(*v[1])
 
@@ -102,7 +126,6 @@ class Intro(State):
             if event.key == pg.K_d:
                 self.toggle_debug()
         if event.type == pg.MOUSEBUTTONUP:
-            logger.info(self.current_time)
             action = self.menu.click(event.pos)
         self.persist = self.menu.config
         if action:
@@ -116,7 +139,6 @@ class Intro(State):
                 self.quit = True
 
     def check(self):
-        logger.info(self.persist)
         if len(self.persist['player']) != 2:
             self.console.log('[ERROR] You need another player!', LogType.ERROR)
             return False

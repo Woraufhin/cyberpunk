@@ -23,6 +23,7 @@ class Button:
         color=s.GREEN,
         pos='center'
     )
+    desc: str = ''
     hovering: bool = False
 
     def __post_init__(self):

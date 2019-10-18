@@ -8,7 +8,7 @@ from enum import Enum
 import pygame as pg
 import numpy as np
 
-import settings as s
+import chess.settings as s
 from chess.utils.coords import Coords
 
 

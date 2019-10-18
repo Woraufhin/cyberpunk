@@ -45,7 +45,7 @@ def main():
     logging.basicConfig(
         format='[%(asctime)s] [%(name)s] [%(levelname)s]: %(message)s',
         datefmt='%I:%M:%S %p',
-        level=logging.DEBUG
+        level=logging.INFO
     )
     """Add states to control here."""
     director = Director(TITLE)

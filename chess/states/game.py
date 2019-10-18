@@ -4,9 +4,10 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Union, List, Dict
 
 import pygame as pg
-import settings as s
+import chess.settings as s
 from chess.states.state import State
-from chess.panels.tilemap import Board, Grid
+from chess.panels.game.wood import Wood
+from chess.panels.game.board import Board
 from chess.utils.coords import Coords
 from chess.player import PlayerFactory
 from chess.pieces import Color
@@ -21,13 +22,14 @@ logger = logging.getLogger(Path(__file__).stem)
 class Game(State):
 
     next: ClassVar[Union[None, str]] = None
+    wood: Union[None, 'Wood'] = None
     board: Union[None, 'Board'] = None
-    grid: Union[None, 'Grid'] = None
     panels: List['pg.sprite.Sprite'] = field(default_factory=list)
     players: Dict['Color', 'chess.player.Player'] = field(default_factory=dict)
     turn: Union[None, 'Color'] = None
     moves: int = 0
     config: dict = field(default_factory=dict)
+    last_call: int = 0
 
     def __post_init__(self):
         self.debug_draws = [
@@ -36,14 +38,14 @@ class Game(State):
 
     def new(self, config):
         # initialize all variables and do all the setup for a new game
-        self.board = Board(
+        self.wood = Wood(
             sprite_group=self.sprites,
             pos=Coords(x=1, y=1),
             size=Coords(x=18, y=18)
         )
-        self.grid = Grid(
+        self.board = Board(
             sprite_group=self.sprites,
-            pos=self.board.pos
+            pos=self.wood.pos
         )
         self.move = Console(
                 sprite_group=self.sprites,
@@ -62,13 +64,29 @@ class Game(State):
     def startup(self, current_time, persist):
         self.new(config=persist)
 
+    def update(self, screen, keys, current_time, dt):
+        # logger.info('%r', current_time - self.last_call)
+        # delay = 0
+        # if current_time - self.last_call < 15:
+        #     delay = current_time - self.last_call
+        #     #logger.info('Waiting...')
+        #     pg.time.delay(delay)
+        # self.last_call = current_time + delay * 3
+        if self.debug:
+            for func in self.debug_draws:
+                func(screen)
+        else:
+            screen.fill(s.BLACK)
+        self.sprites.draw(screen)
+        self.sprites.update()
+
     def draw_grid(self, screen):
         for x in range(0, s.WIDTH, s.TILESIZE):
             pg.draw.line(screen, s.LIGHTGREY, (x, 0), (x, s.HEIGHT))
         for y in range(0, s.HEIGHT, s.TILESIZE):
             pg.draw.line(screen, s.LIGHTGREY, (0, y), (s.WIDTH, y))
-        for piece in self.grid.piece_sprites:
-            pg.draw.rect(self.grid.image, s.RED, piece.rect, 1)
+        for piece in self.board.piece_sprites:
+            pg.draw.rect(self.board.image, s.RED, piece.rect, 1)
 
     def act_event(self, event):
         turn_over = False
@@ -79,11 +97,11 @@ class Game(State):
             if event.key == pg.K_d:
                 self.debug = not self.debug
         if event.type == pg.MOUSEBUTTONUP and \
-                self.grid.rect.collidepoint(event.pos):
+                self.board.rect.collidepoint(event.pos):
             grid_click_pos = event.pos
 
         if self.players[self.turn].type == 'human' and grid_click_pos is not None:
-            move = self.players[self.turn].move(grid_click_pos, self.grid)
+            move = self.players[self.turn].move(grid_click_pos, self.board)
             if move:
                 self.log_move(move)
                 turn_over = True
@@ -93,7 +111,7 @@ class Game(State):
     def act(self):
         turn_over = False
         if self.players[self.turn].type == 'machine':
-            move = self.players[self.turn].move(self.grid)
+            move = self.players[self.turn].move(self.board)
             if move:
                 self.log_move(move)
                 turn_over = True

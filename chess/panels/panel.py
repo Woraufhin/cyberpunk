@@ -61,5 +61,8 @@ class Panel(pg.sprite.Sprite):
             px = s.TILESIZE / 4
             pg.draw.rect(self.image, self.parent_color, (0, 0, px, px))
             pg.draw.rect(self.image, self.parent_color, (0, self.image.get_height() - px, px, px))
-            pg.draw.rect(self.image, self.parent_color, (self.image.get_width() - px, self.image.get_height() - px, px, px))
+            pg.draw.rect(
+                self.image, self.parent_color,
+                (self.image.get_width() - px, self.image.get_height() - px, px, px)
+            )
             pg.draw.rect(self.image, self.parent_color, (self.image.get_width() - px, 0, px, px))

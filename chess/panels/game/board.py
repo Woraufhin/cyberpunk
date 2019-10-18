@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from dataclasses import dataclass
 
 import pygame as pg
 import numpy as np
@@ -8,61 +7,12 @@ import numpy as np
 import chess.settings as s
 from chess.utils.coords import Coords
 from chess.pieces import PieceFactory, PieceId, PieceType, Color
-from chess.utils.typewriter import TypewriterConfig, Typewriter
-from chess.panels.panel import Panel
 
 
 logger = logging.getLogger(Path(__file__).stem)
 
 
-@dataclass(eq=False)
-class Board(Panel):
-
-    def __post_init__(self):
-        super().__post_init__()
-        self.draw_margin()
-        self.draw_legend()
-
-    def draw_legend(self):
-        letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        config = TypewriterConfig(
-            size=22,
-            color=s.WHITE,
-            padding=10,
-            surface_color=s.DARKGREY
-        )
-        tp = Typewriter(
-            surface=self.image,
-            config=config
-        )
-        for i, l in enumerate(letters, start=1):
-            num_w, num_h = tp.get_text_size(str(i))
-            l_w, l_h = tp.get_text_size(l)
-            tp.type(
-                text=str(i),
-                coords=Coords(
-                    x=s.TILESIZE // 2 - num_w // 2,
-                    y=s.TILESIZE * 2 * i - num_h // 2
-                )
-            )
-            tp.type(
-                text=l,
-                coords=Coords(
-                    x=i * s.TILESIZE * 2 - l_w // 2,
-                    y=self.image.get_height() - s.TILESIZE + l_h // 4
-                )
-            )
-
-    def draw_margin(self):
-        m_px = 4
-        margin = pg.Rect(
-            s.TILESIZE - m_px, s.TILESIZE - m_px,
-            2 * (s.TILESIZE * 8 + m_px), 2 * (s.TILESIZE * 8 + m_px)
-        )
-        pg.draw.rect(self.image, s.GREEN, margin)
-
-
-class Grid(pg.sprite.Sprite):
+class Board(pg.sprite.Sprite):
 
     PADDING = s.TILESIZE
 
@@ -180,6 +130,7 @@ class Grid(pg.sprite.Sprite):
 
     def move(self, from_, to, color):
         piece = self.get_piece_at(from_)
+        logger.debug('%r is trying to move: %r from: %r to: %r', color, piece, from_, to)
         if (piece.color != color) or \
            (to not in piece.possible_moves(self.grid)):
             logger.debug('Won\'t move: %r, from: %r, to: %r', piece, from_, to)
@@ -200,8 +151,8 @@ class Grid(pg.sprite.Sprite):
         # update grid position
         self.grid[int(to.y), int(to.x)], self.grid[int(from_.y), int(from_.x)] = \
             self.grid[int(from_.y), int(from_.x)], 0
-        logger.info('Move: %r, from: %r, to: %r', piece, from_, to)
-        logger.info(self.grid)
+        logger.debug('Move: %r, from: %r, to: %r', piece, from_, to)
+        # logger.info(self.grid)
 
     def update(self):
         self.draw_selected()

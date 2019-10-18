@@ -17,6 +17,7 @@ class PlayerFactory:
 
 class Player:
     type = None
+
     def __init__(self, color):
         self.color = color
 
@@ -57,7 +58,7 @@ class RandomAI(Player):
             for move in p.possible_moves(grid.grid):
                 pos_moves.append((p.pos, move))
         cho = choice(pos_moves)
-        logger.info('AI choosing: %r', cho)
+        logger.debug('AI choosing: %r', cho)
         if grid.move(*cho, self.color):
             move = cho
         return move

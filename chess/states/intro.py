@@ -103,7 +103,7 @@ class Intro(State):
         self.menu.set_console(self.console)
         self.menu.set_info_console(self.info_console)
 
-    def update(self, screen, keys, current_time, dt):
+    def update(self, screen, current_time, dt):
         self.current_time = current_time / 1000
         if self.debug:
             for func in self.debug_draws:
@@ -120,21 +120,19 @@ class Intro(State):
                 v[0] = True
                 self.console.log(*v[1])
 
-    def act_event(self, event):
+    def events(self, events: list):
         action = None
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_d:
+        for event in events:
+            if event.type == pg.KEYDOWN and event.key == pg.K_d:
                 self.toggle_debug()
-        if event.type == pg.MOUSEBUTTONUP:
-            action = self.menu.click(event.pos)
+            elif event.type == pg.MOUSEBUTTONUP:
+                action = self.menu.click(event.pos)
         self.persist = self.menu.config
         if action:
             if action == 'PLAY':
                 if self.check():
                     self.next = 'GAME'
                     self.done = True
-                else:
-                    logger.info('Error')
             elif action == 'QUIT':
                 self.quit = True
 

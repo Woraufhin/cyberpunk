@@ -11,8 +11,8 @@ import chess.settings as s
 class State(metaclass=ABCMeta):
     """ Finite state machine """
     next: ClassVar[Union[None, str]] = None
-    sprites: Type['pg.sprite.Group'] = field(
-        default_factory=pg.sprite.Group
+    sprites: Type['pg.sprite.RenderUpdates'] = field(
+        default_factory=pg.sprite.RenderUpdates
     )
     start_time: float = 0.0
     current_time: float = 0.0
@@ -27,12 +27,8 @@ class State(metaclass=ABCMeta):
     def new(self, config=None):
         pass
 
-    def act_event(self, event):
-        """ Process event inside event loop """
-        pass
-
-    def act(self):
-        """ Process outside of event loop (for AIs) """
+    def events(self, events: list):
+        """ Process events """
         pass
 
     def startup(self, current_time, persistent):
@@ -47,7 +43,7 @@ class State(metaclass=ABCMeta):
         self.done = False
         return self.persist
 
-    def update(self, screen, keys, current_time, dt):
+    def update(self, screen, current_time, dt):
         self.current_time = current_time / 1000
         if self.debug:
             for func in self.debug_draws:
@@ -55,7 +51,7 @@ class State(metaclass=ABCMeta):
         else:
             screen.fill(s.BLACK)
         self.sprites.update()
-        self.sprites.draw(screen)
+        return self.sprites.draw(screen)
 
     def toggle_debug(self):
         self.debug = not self.debug

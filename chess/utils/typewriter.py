@@ -1,5 +1,6 @@
 import math
 import logging
+from collections import namedtuple
 from pathlib import Path
 from dataclasses import dataclass
 from typing import List, ClassVar, Tuple, Dict
@@ -54,7 +55,7 @@ class Typewriter:
         text_surf = font.render(
             # this function takes no keyword args...
             text,       # text
-            True,       # antialias
+            False,       # antialias
             conf.color  # color
         )
         text_rect = self.position(text_surf.get_rect(), conf.pos, coords)
@@ -64,30 +65,38 @@ class Typewriter:
             top_down: bool = False,
             configs: Dict['LogType', 'TypewriterConfig'] = None):
         """ Intelligently print within surface.
-        This behaves as if surface were a normal console
+        This behaves as if surface were a normal console """
 
-        """
         max_w, max_h = self.surface.get_width(), self.surface.get_height() - self.line_size
         x, y = self.config.padding, max_h
         if top_down:
             x, y = self.config.padding, self.config.padding
         font = self.get_font(self.config.size, self.config.bold)
+
         # fill screen to re-draw
         self.surface.fill(self.config.surface_color)
+
+        # honor new lines
         text = self._process_newlines(text)
+
         if not top_down:
             text = reversed(text)
-        for type, line in text:
+        for type, entry in text:
+            if y < 0 or y > max_h:
+                # this was a huge optimization :P
+                break
             try:
                 conf = configs[type]
             except IndexError:
                 conf = self.config
             if not top_down:
-                line_surface = font.render(line, True, conf.color)
-                line_width, line_height = line_surface.get_size()
-                lines_needed = int(math.ceil(line_width / (max_w - conf.padding * 2)))
-                y -= lines_needed * line_height
-            for word in line.split(' '):
+                # calculate how many rows we need to print entry when
+                # we're typing bottom-up
+                line = self._calculate_lines_needed(
+                    entry, conf, font, max_w
+                )
+                y -= line.need * line.height
+            for word in entry.split(' '):
                 word_surface = font.render(word, True, conf.color)
                 word_width, word_height = word_surface.get_size()
                 if x + word_width >= max_w:
@@ -96,10 +105,19 @@ class Typewriter:
                 self.surface.blit(word_surface, (x, y))
                 x += word_width + self.space_size[0]
             x = conf.padding  # Reset the x.
-            if top_down:
-                y += word_height
+            if not top_down:
+                y -= word_height * (line.need - 1)  # Calculate new offset position
             else:
-                y -= word_height * (lines_needed - 1)  # Calculate new offset position
+                y += word_height
+
+    def _calculate_lines_needed(self, line, conf, font, max_width):
+        Line = namedtuple('Line', ['need', 'width', 'height'])
+        line_surface = font.render(line, True, conf.color)
+        line_width, line_height = line_surface.get_size()
+        lines_needed = int(math.ceil(
+            line_width / (max_width - conf.padding * 2)
+        ))
+        return Line(lines_needed, line_width, line_height)
 
     def _process_newlines(self, text):
         new_text = []

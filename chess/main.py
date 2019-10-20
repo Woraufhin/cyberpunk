@@ -1,43 +1,16 @@
 import logging
 import pygame as pg
 
-from pathlib import PurePath
-
+import chess.settings as s
 from chess.director import Director
 from chess.states.intro import Intro
 from chess.states.game import Game
 
 
-# PYGAME OPTIONS
-FONT_PATH = str(PurePath('assets', 'fonts', 'redalert_inet.ttf'))
-SPRITE_FOLDER = str(PurePath('assets', 'sprites'))
-
-# define some colors (R, G, B)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-DARKGREY = (40, 40, 40)
-LIGHTGREY = (100, 100, 100)
-GREEN = (102, 255, 102)
-LIGHTGREEN = (51, 255, 51)
-DARKGREEN = (0, 128, 0)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-
-# game settings
-WIDTH = 1024   # 16 * 64 or 32 * 32 or 64 * 16
-HEIGHT = 768  # 16 * 48 or 32 * 24 or 64 * 12
-FPS = 60
-TITLE = "Cyberpunk chess"
-BGCOLOR = BLACK
-
-TILESIZE = 32
-GRIDWIDTH = WIDTH / TILESIZE
-GRIDHEIGHT = HEIGHT / TILESIZE
-
-#Initialization
+# initialization
 pg.init()
-pg.display.set_caption(TITLE)
-SCREEN = pg.display.set_mode((WIDTH, HEIGHT))
+pg.display.set_caption(s.TITLE)
+SCREEN = pg.display.set_mode((s.WIDTH, s.HEIGHT))
 SCREEN_RECT = SCREEN.get_rect()
 
 
@@ -47,8 +20,9 @@ def main():
         datefmt='%I:%M:%S %p',
         level=logging.INFO
     )
-    """Add states to control here."""
-    director = Director(TITLE)
+    director = Director(caption=s.TITLE)
+
+    # states the game has / scenes
     state_dict = {
         'INTRO': Intro(),
         'GAME': Game()
@@ -56,4 +30,6 @@ def main():
     director.setup_states(state_dict, "INTRO")
     director.main()
 
-main()
+
+if __name__ == '__main__':
+    main()

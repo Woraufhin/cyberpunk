@@ -21,8 +21,15 @@ class Player:
     def __init__(self, color):
         self.color = color
 
-    def move(self):
+    def move(self, grid, pos):
         pass
+
+    def get_possible_moves(self, grid):
+        pos_moves = []
+        for p in grid.get_pieces_for_color(self.color):
+            for move in p.possible_moves(grid.grid):
+                pos_moves.append((p.pos, move))
+        return pos_moves
 
 
 class HumanPlayer(Player):
@@ -30,18 +37,21 @@ class HumanPlayer(Player):
 
     def __init__(self, color):
         super().__init__(color)
-        self.considering = []
+        self.considering = None
 
-    def move(self, pos, grid):
+    def move(self, grid, pos):
         move = False
+        moves = self.get_possible_moves(grid)
         sel = grid.select(pos, self.color)
-        if sel is not None:
-            logger.info('Selecting: %r', sel)
-            self.considering.append(sel)
-        if len(self.considering) == 2:
-            if grid.move(*self.considering, self.color):
-                move = self.considering
-            self.considering = []
+        if sel is not None and self.considering is None:
+            self.considering = sel
+        elif (self.considering, sel) in moves:
+            move = (self.considering, sel)
+            grid.move(from_=move[0], to=move[1])
+            self.considering = None
+        else:
+            logger.debug('Player did not click on a possible square')
+            self.considering = None
         return move
 
 
@@ -51,14 +61,7 @@ class RandomAI(Player):
     def __init__(self, color):
         super().__init__(color)
 
-    def move(self, grid):
-        move = False
-        pos_moves = []
-        for p in grid.get_pieces_for_color(self.color):
-            for move in p.possible_moves(grid.grid):
-                pos_moves.append((p.pos, move))
-        cho = choice(pos_moves)
-        logger.debug('AI choosing: %r', cho)
-        if grid.move(*cho, self.color):
-            move = cho
-        return move
+    def move(self, grid, pos):
+        cho = choice(self.get_possible_moves(grid))
+        grid.move(from_=cho[0], to=cho[1])
+        return cho

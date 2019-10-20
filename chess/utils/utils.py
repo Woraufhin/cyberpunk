@@ -13,11 +13,12 @@ logger = logging.getLogger(Path(__file__).stem)
 class Coords(pg.math.Vector2):
     @property
     def row(self):
-        return self.y
+        logger.info('here')
+        return int(self.y)
 
     @property
     def col(self):
-        return self.x
+        return int(self.x)
 
 
 def draw_text(surf, text, size, pos, color=s.GREEN, vpad=0):

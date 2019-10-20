@@ -64,22 +64,6 @@ class Game(State):
     def startup(self, current_time, persist):
         self.new(config=persist)
 
-    def update(self, screen, keys, current_time, dt):
-        # logger.info('%r', current_time - self.last_call)
-        # delay = 0
-        # if current_time - self.last_call < 15:
-        #     delay = current_time - self.last_call
-        #     #logger.info('Waiting...')
-        #     pg.time.delay(delay)
-        # self.last_call = current_time + delay * 3
-        if self.debug:
-            for func in self.debug_draws:
-                func(screen)
-        else:
-            screen.fill(s.BLACK)
-        self.sprites.draw(screen)
-        self.sprites.update()
-
     def draw_grid(self, screen):
         for x in range(0, s.WIDTH, s.TILESIZE):
             pg.draw.line(screen, s.LIGHTGREY, (x, 0), (x, s.HEIGHT))
@@ -88,34 +72,32 @@ class Game(State):
         for piece in self.board.piece_sprites:
             pg.draw.rect(self.board.image, s.RED, piece.rect, 1)
 
-    def act_event(self, event):
-        turn_over = False
+    def events(self, events):
         grid_click_pos = None
-        # catch all events here
-        if event.type == pg.KEYDOWN:
-            logger.debug('Key pressed: %s', event.unicode)
-            if event.key == pg.K_d:
-                self.debug = not self.debug
-        if event.type == pg.MOUSEBUTTONUP and \
-                self.board.rect.collidepoint(event.pos):
-            grid_click_pos = event.pos
+        for event in events:
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_d:
+                    self.debug = not self.debug
+            if event.type == pg.MOUSEBUTTONUP and \
+                    self.board.rect.collidepoint(event.pos):
+                grid_click_pos = event.pos
 
-        if self.players[self.turn].type == 'human' and grid_click_pos is not None:
-            move = self.players[self.turn].move(grid_click_pos, self.board)
-            if move:
-                self.log_move(move)
-                turn_over = True
-        if turn_over:
-            self.turn_over()
-
-    def act(self):
-        turn_over = False
-        if self.players[self.turn].type == 'machine':
-            move = self.players[self.turn].move(self.board)
-            if move:
-                self.log_move(move)
-                turn_over = True
-        if turn_over:
+        # if it's a "human" turn, then check if she has clicked on the board
+        #     if she did, then proceed with human turn
+        # else it's an AI, so just move.
+        move = None
+        if self.players[self.turn].type == 'human' \
+                and grid_click_pos is not None:
+            move = self.players[self.turn].move(
+                self.board,
+                self.board.px_to_grid(
+                    Coords(x=grid_click_pos[0], y=grid_click_pos[1])
+                )
+            )
+        elif self.players[self.turn].type == 'machine':
+            move = self.players[self.turn].move(self.board, None)
+        if move:
+            self.log_move(move)
             self.turn_over()
 
     def log_move(self, move):

@@ -30,6 +30,10 @@ class Color(Enum):
     black = 1
     white = 2
 
+    @staticmethod
+    def next(color):
+        return Color.white if color == Color.black else Color.black
+
 
 class PieceFactory:
     @staticmethod
@@ -147,6 +151,7 @@ class King(Piece):
     def __init__(self, pid, color, pos):
         super().__init__(PieceType.king, pid, color, pos)
         self.moved = False
+        self.is_checked = False
         self.move_offset = Offsets(1, 1, 1, 1)
 
     def possible_moves(self, grid):

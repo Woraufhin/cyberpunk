@@ -30,7 +30,7 @@ class Board(pg.sprite.Sprite):
             pos.y * s.TILESIZE + self.PADDING
         ))
         self.captured = []
-        self.grid = self.get_grid()
+        self.grid = self.get_new_grid()
         self.selected = None
         self.draw_grid()
         self.draw_armies()
@@ -38,8 +38,95 @@ class Board(pg.sprite.Sprite):
     def update(self):
         self.draw_selected()
 
-    def get_pieces_for_color(self, color: Color):
-        return [p for p in self.pieces.values() if p.color == color]
+    def get_king(self, color: Color):
+        uid = 100 + Color(color).value * 10 + PieceType.king.value
+        return self.pieces[uid]
+
+    def get_pieces_for_color(self, grid, color: Color):
+        pieces = []
+        for row in grid:
+            for cell in row:
+                if cell and self.pieces[cell].color == color:
+                    pieces.append(self.pieces[cell])
+        return pieces
+
+    def get_possible_moves(self, grid, color: Color):
+        pos_moves = []
+        for p in self.get_pieces_for_color(grid, color):
+            for move in p.possible_moves(grid):
+                m = (p.pos, move)
+                pos_grid = self.simulate_move(grid, m)
+                if not self.is_king_checked(pos_grid, color):
+                    pos_moves.append(m)
+        return pos_moves
+
+    def is_king_checked(self, grid, color):
+        rival_color = Color.white if color == Color.black else Color.black
+        for p in self.get_pieces_for_color(grid, rival_color):
+            for move in p.possible_moves(grid):
+                piece_to = self.get_piece_at(move, grid)
+                if piece_to and piece_to.type == PieceType.king:
+                    return True
+        return False
+
+    def is_piece_at(self, pos: Coords, grid):
+        return True if grid[pos.row, pos.col] else False
+
+    def get_piece_at(self, pos: Coords, grid, fail_if_no_piece: bool = False):
+        if self.is_piece_at(pos, grid):
+            return self.pieces[grid[pos.row, pos.col]]
+        elif fail_if_no_piece:
+            raise NoPieceAtIndex(f'No piece at {pos!r}')
+        return None
+
+    def select(self, pos: Coords, player_color: str):
+        """ Selects a piece on the board """
+        if self.selected is not None:
+            self.selected = None
+            return pos
+        piece = self.get_piece_at(pos, self.grid)
+        if piece and piece.color == player_color and \
+                self.selected != pos:
+            sel = pos
+        else:
+            sel = None
+        self.selected = sel
+        return sel
+
+    def move(self, from_: Coords, to: Coords):
+        piece_from = self.get_piece_at(from_, self.grid, fail_if_no_piece=True)
+        piece_to = self.get_piece_at(to, self.grid)
+
+        # un check check :D. If king is checked only an attempt at solving it
+        # could have been done
+        king = self.get_king(piece_from.color)
+        if king.is_checked:
+            king.is_checked = False
+
+        # update grid first
+        self.grid[to.row, to.col], self.grid[from_.row, from_.col] = \
+            self.grid[from_.row, from_.col], 0
+
+        # update sprite second
+        if piece_to:
+            self.sprites.remove(piece_to)
+            self.captured.append(self.pieces.pop(piece_to.pid))
+        piece_from.pos = to
+
+        # check if movement results in any kind of check
+        if self.is_king_checked(self.grid, Color.next(piece_from.color)):
+            rival_king = self.get_king(Color.next(piece_from.color))
+            rival_king.is_checked = True
+
+        # set moved to true third
+        try:
+            piece_from.moved = True
+        except AttributeError:
+            pass
+
+    def px_to_grid(self, pos: Coords):
+        coords = (pos - self.rect.topleft) / s.TILESIZE // 2
+        return Coords(x=coords.x, y=coords.y)
 
     def draw_grid(self):
         for i, row in enumerate(self.grid):
@@ -75,12 +162,25 @@ class Board(pg.sprite.Sprite):
     def draw_selected(self):
         self.draw_grid()
         if self.selected is not None:
-            piece = self.get_piece_at(self.selected)
+            piece = self.get_piece_at(self.selected, self.grid)
             if piece:
-                rects = [pg.Rect(
-                    p.x * s.TILESIZE * 2, p.y * s.TILESIZE * 2,
-                    s.TILESIZE * 2, s.TILESIZE * 2
-                ) for p in piece.possible_moves(self.grid)]
+                king = self.get_king(piece.color)
+                rects = []
+                for p in piece.possible_moves(self.grid):
+                    pos_grid = self.simulate_move(self.grid, (piece.pos, p))
+
+                    if king.is_checked and self.is_king_checked(pos_grid, piece.color):
+                        # if king is checked and move doesn't do anything to solve it
+                        # then we don't want to show move since it's not possible to
+                        # chose it.
+                        continue
+                    elif not self.is_king_checked(pos_grid, piece.color):
+                        # if king is not checked and the move doesn't force an auto-
+                        # check situation, then we display the move.
+                        rects.append(pg.Rect(
+                            p.x * s.TILESIZE * 2, p.y * s.TILESIZE * 2,
+                            s.TILESIZE * 2, s.TILESIZE * 2
+                        ))
                 sel = pg.Rect(
                     self.selected.x * s.TILESIZE * 2, self.selected.y * s.TILESIZE * 2,
                     s.TILESIZE * 2, s.TILESIZE * 2
@@ -89,59 +189,16 @@ class Board(pg.sprite.Sprite):
                 for rect in rects:
                     pg.draw.rect(self.image, s.YELLOW, rect, 5)
 
-    def is_piece_at(self, pos: Coords):
-        return True if self.grid[pos.row, pos.col] else False
-
-    def get_piece_at(self, pos: Coords, fail_if_no_piece: bool = False):
-        if self.is_piece_at(pos):
-            return self.pieces[self.grid[pos.row, pos.col]]
-        elif fail_if_no_piece:
-            raise NoPieceAtIndex(f'No piece at {pos!r}')
-        return None
-
-    def select(self, pos: Coords, player_color: str):
-        """ Selects a piece on the board """
-        if self.selected is not None:
-            self.selected = None
-            return pos
-        piece = self.get_piece_at(pos)
-        if piece and piece.color == player_color and \
-                self.selected != pos:
-            sel = pos
-        else:
-            sel = None
-        self.selected = sel
-        return sel
-
-    def move(self, from_: Coords, to: Coords):
-        piece_from = self.get_piece_at(from_, fail_if_no_piece=True)
-        piece_to = self.get_piece_at(to)
-
-        # update grid first
-        self.grid[to.row, to.col], self.grid[from_.row, from_.col] = \
-            self.grid[from_.row, from_.col], 0
-
-        # update sprite second
-        if piece_to:
-            self.sprites.remove(piece_to)
-            self.captured.append(self.pieces.pop(piece_to.pid))
-        piece_from.pos = to
-
-        # set moved to true third
-        try:
-            piece_from.moved = True
-        except AttributeError:
-            pass
-
-    def px_to_grid(self, pos: Coords):
-        coords = (pos - self.rect.topleft) / s.TILESIZE // 2
-        return Coords(x=coords.x, y=coords.y)
-
-    def erase_selected(self):
-        self.selected = None
+    @staticmethod
+    def simulate_move(grid, move) -> 'np.array':
+        new_grid = np.copy(grid)
+        from_, to = move
+        new_grid[to.row, to.col], new_grid[from_.row, from_.col] = \
+            new_grid[from_.row, from_.col], 0
+        return new_grid
 
     @staticmethod
-    def get_grid():
+    def get_new_grid():
         return np.array([
             [112, 113, 114, 115, 116, 214, 213, 212],
             [111, 211, 311, 411, 511, 611, 711, 811],

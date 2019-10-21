@@ -132,33 +132,32 @@ class Typewriter:
         s_rect = self.surface.get_rect()
         if coords:
             text_rect.topleft = coords
-        else:
-            if pos == 'center':
-                text_rect.center = s_rect.center
-            elif pos == 'topleft':
-                padding = Coords(x=self.config.padding, y=self.config.padding)
-                text_rect.topleft = s_rect.topleft + padding
-            elif pos == 'midtop':
-                padding = Coords(x=0, y=self.config.padding)
-                text_rect.midtop = s_rect.midtop + padding
-            elif pos == 'topright':
-                padding = Coords(x=-self.config.padding, y=self.config.padding)
-                text_rect.topright = s_rect.topright + padding
-            elif pos == 'midleft':
-                padding = Coords(x=self.config.padding, y=0)
-                text_rect.midleft = s_rect.midleft + padding
-            elif pos == 'midright':
-                padding = Coords(x=-self.config.padding, y=0)
-                text_rect.midright = s_rect.midright + padding
-            elif pos == 'bottomleft':
-                padding = Coords(x=self.config.padding, y=-self.config.padding)
-                text_rect.bottomleft = s_rect.bottomleft + padding
-            elif pos == 'midbottom':
-                padding = Coords(x=0, y=-self.config.padding)
-                text_rect.midbottom = s_rect.midbottom + padding
-            elif pos == 'bottomright':
-                padding = Coords(x=-self.config.padding, y=-self.config.padding)
-                text_rect.bottomright = s_rect.bottomright + padding
+        elif pos == 'center':
+            text_rect.center = s_rect.center
+        elif pos == 'topleft':
+            padding = Coords(x=self.config.padding, y=self.config.padding)
+            text_rect.topleft = s_rect.topleft + padding
+        elif pos == 'midtop':
+            padding = Coords(x=0, y=self.config.padding)
+            text_rect.midtop = s_rect.midtop + padding
+        elif pos == 'topright':
+            padding = Coords(x=-self.config.padding, y=self.config.padding)
+            text_rect.topright = s_rect.topright + padding
+        elif pos == 'midleft':
+            padding = Coords(x=self.config.padding, y=0)
+            text_rect.midleft = s_rect.midleft + padding
+        elif pos == 'midright':
+            padding = Coords(x=-self.config.padding, y=0)
+            text_rect.midright = s_rect.midright + padding
+        elif pos == 'bottomleft':
+            padding = Coords(x=self.config.padding, y=-self.config.padding)
+            text_rect.bottomleft = s_rect.bottomleft + padding
+        elif pos == 'midbottom':
+            padding = Coords(x=0, y=-self.config.padding)
+            text_rect.midbottom = s_rect.midbottom + padding
+        elif pos == 'bottomright':
+            padding = Coords(x=-self.config.padding, y=-self.config.padding)
+            text_rect.bottomright = s_rect.bottomright + padding
         return text_rect
 
     def get_text_size(self, text):

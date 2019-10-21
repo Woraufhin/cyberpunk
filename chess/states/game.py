@@ -14,7 +14,6 @@ from chess.pieces import Color
 from chess.panels.console import Console
 
 
-vec = pg.math.Vector2
 logger = logging.getLogger(Path(__file__).stem)
 
 
@@ -36,7 +35,7 @@ class Game(State):
             self.draw_grid
         ]
 
-    def new(self, config):
+    def new(self, config=None):
         # initialize all variables and do all the setup for a new game
         self.wood = Wood(
             sprite_group=self.sprites,
@@ -73,6 +72,8 @@ class Game(State):
             pg.draw.rect(self.board.image, s.RED, piece.rect, 1)
 
     def events(self, events):
+        if self.check_mate():
+            self.console.log(f'Check mate! WINNER: {Color.next(self.turn)}')
         grid_click_pos = None
         for event in events:
             if event.type == pg.KEYDOWN:
@@ -101,10 +102,19 @@ class Game(State):
             self.turn_over()
 
     def log_move(self, move):
+        king = self.board.get_king(Color.next(self.turn))
         self.moves += 1
         self.move.log(f'[{self.moves:03}]')
-        self.move.log(str(move))
+        msg = str(move)
+        if king.is_checked:
+            msg += ' check!'
+        self.move.log(msg)
         self.move.log('')
+
+    def check_mate(self):
+        king = self.board.get_king(self.turn)
+        return king.is_checked and not \
+            self.board.get_possible_moves(self.board.grid, self.turn)
 
     def turn_over(self):
         if self.turn == Color.white:

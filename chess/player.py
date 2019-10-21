@@ -24,13 +24,6 @@ class Player:
     def move(self, grid, pos):
         pass
 
-    def get_possible_moves(self, grid):
-        pos_moves = []
-        for p in grid.get_pieces_for_color(self.color):
-            for move in p.possible_moves(grid.grid):
-                pos_moves.append((p.pos, move))
-        return pos_moves
-
 
 class HumanPlayer(Player):
     type = 'human'
@@ -41,7 +34,7 @@ class HumanPlayer(Player):
 
     def move(self, grid, pos):
         move = False
-        moves = self.get_possible_moves(grid)
+        moves = grid.get_possible_moves(grid.grid, self.color)
         sel = grid.select(pos, self.color)
         if sel is not None and self.considering is None:
             self.considering = sel
@@ -62,6 +55,6 @@ class RandomAI(Player):
         super().__init__(color)
 
     def move(self, grid, pos):
-        cho = choice(self.get_possible_moves(grid))
+        cho = choice(grid.get_possible_moves(grid.grid, self.color))
         grid.move(from_=cho[0], to=cho[1])
         return cho

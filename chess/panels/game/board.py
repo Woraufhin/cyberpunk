@@ -47,7 +47,7 @@ class Board(pg.sprite.Sprite):
         uid = num * 100 + Color(color).value * 10 + PieceType(type).value
         try:
             return self.pieces[uid]
-        except IndexError:
+        except KeyError:
             return None
 
     def get_pieces_for_color(self, grid, color: Color):

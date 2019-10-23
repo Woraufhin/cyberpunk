@@ -252,8 +252,7 @@ class Pawn(Piece):
                 y=self.row + 2 if self.color == Color.black else self.row - 2
             )
             if powa_move.row < 0 or powa_move.row > 7:
-                # TODO
-                logger.warning('Reaching edge of board, should promote')
+                pass
             elif not grid[powa_move.row, powa_move.col]:
                 moves.append(powa_move)
 

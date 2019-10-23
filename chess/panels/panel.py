@@ -15,7 +15,7 @@ logger = logging.getLogger(Path(__file__).stem)
 
 @dataclass(eq=False)
 class Panel(pg.sprite.Sprite):
-    sprite_group: Type['pg.sprite.Group']
+    sprite_group: pg.sprite.Group
     pos: 'Coords'
     size: 'Coords'
     tp_config: 'TypewriterConfig' = TypewriterConfig(
@@ -24,6 +24,7 @@ class Panel(pg.sprite.Sprite):
         pos='midtop'
     )
     title: Union[None, str] = None
+    alpha: Union[None, int] = None
     parent_color: tuple = s.BLACK
     color: tuple = s.DARKGREY
     draw_title: bool = True
@@ -31,10 +32,12 @@ class Panel(pg.sprite.Sprite):
 
     def __post_init__(self):
         super().__init__(self.sprite_group)
-        self.image = pg.Surface((
-            s.TILESIZE * self.size.x,
-            s.TILESIZE * self.size.y
-        ))
+        args = [(s.TILESIZE * self.size.x, s.TILESIZE * self.size.y)]
+        if self.alpha:
+            args.append(pg.SRCALPHA)
+        self.image = pg.Surface(*args)
+        if self.alpha:
+            self.color = (*self.color, self.alpha)
         self.image.fill(self.color)
         self.rect = self.image.get_rect()
         self.x = self.pos.x

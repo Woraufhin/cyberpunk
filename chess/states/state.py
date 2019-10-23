@@ -11,7 +11,7 @@ import chess.settings as s
 class State(metaclass=ABCMeta):
     """ Finite state machine """
     next: ClassVar[Union[None, str]] = None
-    sprites: Type['pg.sprite.RenderUpdates'] = field(
+    sprites: pg.sprite.RenderUpdates = field(
         default_factory=pg.sprite.RenderUpdates
     )
     start_time: float = 0.0

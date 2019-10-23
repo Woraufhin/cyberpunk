@@ -30,7 +30,7 @@ class Board(pg.sprite.Sprite):
             pos.y * s.TILESIZE + self.PADDING
         ))
         self.captured = []
-        self.grid = self.get_new_grid()
+        self.grid = self.get_test_grid()
         self.selected = None
         self.console = None
         self.draw_grid()
@@ -120,6 +120,18 @@ class Board(pg.sprite.Sprite):
             raise NoPieceAtIndex(f'No piece at {pos!r}')
         return None
 
+    def promotions(self, color: Color, grid=None):
+        grid = grid if grid else self.grid
+        promo_row = 0 if color == Color.white else 7
+        for piece in self.get_pieces_for_color(grid, color):
+            if piece.type == PieceType.pawn and piece.pos.row == promo_row:
+                logger.info('Piece: %r is promoting', piece)
+                return piece
+        return None
+
+    def handle_promotions(self, pawn, new_piece):
+        pass
+
     def select(self, pos: Coords, player_color: str):
         """ Selects a piece on the board """
         if self.selected is not None:
@@ -134,7 +146,7 @@ class Board(pg.sprite.Sprite):
         self.selected = sel
         return sel
 
-    def is_castling(self, piece, to):
+    def is_castling_with_rook(self, piece, to):
         if piece.type == PieceType.king:
             if piece.pos.col - 2 == to.col:
                 return self.get_piece(piece.color, PieceType.rook, 1)
@@ -144,7 +156,7 @@ class Board(pg.sprite.Sprite):
 
     def move(self, from_: Coords, to: Coords):
         piece_from = self.get_piece_at(from_, self.grid, fail_if_no_piece=True)
-        rook = self.is_castling(piece_from, to)
+        rook = self.is_castling_with_rook(piece_from, to)
         if rook:
             self._castle_move(king=piece_from, rook=rook, to=to)
         else:
@@ -274,5 +286,18 @@ class Board(pg.sprite.Sprite):
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
             [121, 221, 321, 421, 521, 621, 721, 821],
+            [122, 123, 124, 125, 126, 224, 223, 222]
+        ])
+
+    @staticmethod
+    def get_test_grid():
+        return np.array([
+            [0, 0, 0, 0, 116, 0, 0, 0],
+            [0, 221, 321, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [121, 0, 0, 421, 521, 621, 721, 821],
             [122, 123, 124, 125, 126, 224, 223, 222]
         ])

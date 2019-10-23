@@ -11,7 +11,6 @@ import numpy as np
 import chess.settings as s
 from chess.utils.coords import Coords
 
-
 logger = logging.getLogger(Path(__file__).stem)
 PieceId = namedtuple('PieceId', ['num', 'color', 'type'])
 Offsets = namedtuple('Offsets', ['up', 'down', 'left', 'right'], defaults=[0, 0, 0, 0])
@@ -74,20 +73,20 @@ class Piece(pg.sprite.Sprite):
     def possible_moves(self, grid):
         pass
 
-    def get_offsets(self, size):
-        off = [-1, size, -1, size]
-        if self.move_offset:
-            off = self.move_offset
-            off = [
-                max(-1, self.row - off.up - 1),
-                min(8, self.row + off.down + 1),
-                max(-1, self.col - off.left - 1),
-                min(8, self.col + off.right + 1)
-            ]
-        return Offsets(*off)
+    def get_offsets(self, size, offset):
+        off = {'up': -1, 'down': size, 'left': -1, 'right': size}
+        if offset:
+            off = offset
+            off = {
+                'up': max(-1, self.row - off.up - 1),
+                'down': min(8, self.row + off.down + 1),
+                'left': max(-1, self.col - off.left - 1),
+                'right': min(8, self.col + off.right + 1)
+            }
+        return Offsets(**off)
 
-    def diagonals(self, x, y, size):
-        off = self.get_offsets(size)
+    def diagonals(self, x, y, size, offset=None):
+        off = self.get_offsets(size, offset)
         return [
             zip(range(x - 1, off.up, -1), range(y - 1, off.left, -1)),
             zip(range(x - 1, off.up, -1), range(y + 1, off.right, 1)),
@@ -95,13 +94,13 @@ class Piece(pg.sprite.Sprite):
             zip(range(x + 1, off.down, 1), range(y - 1, off.left, -1))
         ]
 
-    def verticals(self, x, y, size):
-        off = self.get_offsets(size)
+    def verticals(self, x, y, size, offset=None):
+        off = self.get_offsets(size, offset)
 
-        up = range(x-1, off.up, -1)
-        down = range(x+1, off.down, 1)
-        left = range(y-1, off.left, -1)
-        right = range(y+1, off.right, 1)
+        up = range(x - 1, off.up, -1)
+        down = range(x + 1, off.down, 1)
+        left = range(y - 1, off.left, -1)
+        right = range(y + 1, off.right, 1)
 
         return [
             zip(up, [y] * len(up)),
@@ -110,10 +109,10 @@ class Piece(pg.sprite.Sprite):
             zip([x] * len(right), right)
         ]
 
-    def clear_diagonals(self, grid):
+    def clear_diagonals(self, grid, offset=None):
         """ Get free diagonals within offset """
         moves = []
-        for diag in self.diagonals(self.row, self.col, 8):
+        for diag in self.diagonals(self.row, self.col, 8, offset):
             for coords in diag:
                 if grid[coords]:
                     piece = PieceId(*[int(e) for e in str(grid[coords])])
@@ -124,10 +123,10 @@ class Piece(pg.sprite.Sprite):
                     moves.append(Coords(x=coords[1], y=coords[0]))
         return moves
 
-    def clear_verticals(self, grid, can_capture=True):
+    def clear_verticals(self, grid, offset=None, can_capture=True):
         """ Get free verticals within offset """
         moves = []
-        for vert in self.verticals(self.row, self.col, 8):
+        for vert in self.verticals(self.row, self.col, 8, offset):
             for coords in vert:
                 if grid[coords]:
                     piece = PieceId(*[int(e) for e in str(grid[coords])])
@@ -156,9 +155,20 @@ class King(Piece):
 
     def possible_moves(self, grid):
         return chain.from_iterable([
-            self.clear_diagonals(grid),
-            self.clear_verticals(grid)
+            self.clear_diagonals(grid, self.move_offset),
+            self.clear_verticals(grid, self.move_offset)
         ])
+
+    def castle_positions(self, grid):
+        # left castle
+        off_l = Offsets(up=0, down=0, left=2, right=0)
+        left_castle = self.clear_verticals(grid, off_l)
+
+        # right castle
+        off_r = Offsets(up=0, down=0, left=0, right=2)
+        right_castle = self.clear_verticals(grid, off_r)
+        return left_castle if len(left_castle) == 2 else [], \
+            right_castle if len(right_castle) == 2 else []
 
 
 class Queen(Piece):
@@ -222,14 +232,14 @@ class Pawn(Piece):
 
     def possible_moves(self, grid):
         moves = []
-        for move in self.clear_diagonals(grid):
+        for move in self.clear_diagonals(grid, self.move_offset):
             # only move diagonally if there's an enemy piece.
             # due to logic in clear_diagonals there can only
             # be enemy pieces
             if grid[move.row, move.col]:
                 moves.append(move)
 
-        for move in self.clear_verticals(grid, can_capture=False):
+        for move in self.clear_verticals(grid, offset=self.move_offset, can_capture=False):
             # only allow y-axis movement
             if move.col == self.col:
                 moves.append(move)

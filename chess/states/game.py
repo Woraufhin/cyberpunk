@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar, Union, List, Dict
 
 import pygame as pg
+
 import chess.settings as s
 from chess.states.state import State
 from chess.panels.game.wood import Wood
@@ -21,11 +22,11 @@ logger = logging.getLogger(Path(__file__).stem)
 class Game(State):
 
     next: ClassVar[Union[None, str]] = None
-    wood: Union[None, 'Wood'] = None
-    board: Union[None, 'Board'] = None
-    panels: List['pg.sprite.Sprite'] = field(default_factory=list)
-    players: Dict['Color', 'chess.player.Player'] = field(default_factory=dict)
-    turn: Union[None, 'Color'] = None
+    wood: Union[None, Wood] = None
+    board: Union[None, Board] = None
+    panels: List[pg.sprite.Sprite] = field(default_factory=list)
+    players: Dict[Color, 'chess.player.Player'] = field(default_factory=dict)
+    turn: Union[None, Color] = None
     moves: int = 0
     config: dict = field(default_factory=dict)
     last_call: int = 0
@@ -57,6 +58,7 @@ class Game(State):
                 pos=Coords(x=20, y=12),
                 size=Coords(x=11, y=11)
         )
+        self.board.set_console(self.console)
         self.players = {k: PlayerFactory.make(name=v)(k) for k, v in config['player'].items()}
         self.turn = Color.white
 
@@ -99,7 +101,7 @@ class Game(State):
             move = self.players[self.turn].move(self.board, None)
         if move:
             self.log_move(move)
-            self.turn_over()
+            self.turn = Color.next(self.turn)
 
     def log_move(self, move):
         king = self.board.get_king(Color.next(self.turn))
@@ -115,9 +117,3 @@ class Game(State):
         king = self.board.get_king(self.turn)
         return king.is_checked and not \
             self.board.get_possible_moves(self.board.grid, self.turn)
-
-    def turn_over(self):
-        if self.turn == Color.white:
-            self.turn = Color.black
-        else:
-            self.turn = Color.white

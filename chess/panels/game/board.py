@@ -30,7 +30,7 @@ class Board(pg.sprite.Sprite):
             pos.y * s.TILESIZE + self.PADDING
         ))
         self.captured = []
-        self.grid = self.get_test_grid()
+        self.grid = self.get_new_grid()
         self.selected = None
         self.console = None
         self.draw_grid()

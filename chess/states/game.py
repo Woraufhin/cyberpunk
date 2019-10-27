@@ -9,7 +9,8 @@ import chess.settings as s
 from chess.states.state import State
 from chess.panels.game.wood import Wood
 from chess.panels.game.board import Board
-from chess.panels.game.promotion import Promotion, Backdrop
+from chess.panels.game.promotion import Promotion
+from chess.panels.game.game_over import GameOver
 from chess.utils.coords import Coords
 from chess.player import PlayerFactory
 from chess.pieces import Color
@@ -29,7 +30,11 @@ class Game(State):
     promotion_sprites: pg.sprite.RenderUpdates = field(
         default_factory=pg.sprite.RenderUpdates
     )
-    promoting: bool = False
+    game_over_sprites: pg.sprite.RenderUpdates = field(
+        default_factory=pg.sprite.RenderUpdates
+    )
+    is_promoting: bool = False
+    is_game_over: bool = False
     players: Dict[Color, 'chess.player.Player'] = field(default_factory=dict)
     turn: Union[None, Color] = None
     moves: int = 0
@@ -63,10 +68,20 @@ class Game(State):
                 pos=Coords(x=20, y=12),
                 size=Coords(x=11, y=11)
         )
-        self.backdrop = Backdrop(
-            sprite_group=self.promotion_sprites,
-            pos=Coords(x=0, y=0),
-            size=Coords(x=s.GRIDWIDTH, y=s.GRIDHEIGHT)
+        self.game_over = GameOver(
+            sprite_group=self.game_over_sprites,
+            pos=Coords(x=13, y=7),
+            size=Coords(x=5, y=6),
+            color=s.LIGHTGREY,
+            margin=4,
+            frame_offset=s.TILESIZE+4,
+            tp_config=TypewriterConfig(
+                padding=5,
+                size=22,
+                color=s.WHITE,
+                surface_color=s.DARKGREY,
+                pos='midtop'
+            )
         )
         self.promotion = Promotion(
             sprite_group=self.promotion_sprites,
@@ -96,9 +111,12 @@ class Game(State):
             screen.fill(s.BLACK)
         self.sprites.update()
         rects = self.sprites.draw(screen)
-        if self.promoting and self.players[self.turn].type == 'human':
+        if self.is_promoting and self.players[self.turn].type == 'human':
             self.promotion_sprites.update()
             rects.extend(self.promotion_sprites.draw(screen))
+        elif self.is_game_over:
+            self.game_over_sprites.update()
+            rects.extend(self.game_over_sprites.draw(screen))
         return rects
 
     def startup(self, current_time, persist):
@@ -111,64 +129,55 @@ class Game(State):
             pg.draw.line(screen, s.LIGHTGREY, (0, y), (s.WIDTH, y))
 
     def events(self, events):
-        if self.check_mate():
-            self.console.log(f'Check mate! WINNER: {Color.next(self.turn)}')
         move = None
-        prom = False
         grid_click_pos = None
         promotion_click_pos = None
+        prom = False
         for event in events:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_d:
                     self.debug = not self.debug
-            if event.type == pg.MOUSEBUTTONUP and not self.promoting and \
-                    self.board.rect.collidepoint(event.pos):
-                grid_click_pos = event.pos
-            if event.type == pg.MOUSEBUTTONUP and self.promoting and \
-                    self.promotion.rect.collidepoint(event.pos):
-                promotion_click_pos = event.pos
+            if event.type == pg.MOUSEBUTTONUP:
+                if self.is_promoting and self.promotion.rect.collidepoint(event.pos):
+                    # check if click was in the promotion menu
+                    promotion_click_pos = event.pos
+                elif not self.is_promoting and self.board.rect.collidepoint(event.pos):
+                    # check if click was inside chess grid
+                    grid_click_pos = event.pos
 
-        # if it's a "human" turn, then check if she has clicked on the board
-        #     if she did, then proceed with human turn
-        # else it's an AI, so just move.
-        move = None
-        if self.players[self.turn].type == 'human':
-            if not self.promoting and grid_click_pos:
-                move = self.players[self.turn].move(
-                    self.board,
-                    self.board.px_to_grid(
-                        Coords(x=grid_click_pos[0], y=grid_click_pos[1])
-                    )
-                )
-            elif self.promoting and promotion_click_pos:
-                prom = self.players[self.turn].promote(
-                    board=self.board,
-                    pawn=self.pawn_prom,
-                    promotion_selector=self.promotion,
-                    pos=promotion_click_pos
-                )
-                self.promoting = False
-                self.pawn_prom = None
+        if self.check_mate():
+            self.is_game_over = True
+            return  # no more mr nice guy
 
-        elif self.players[self.turn].type == 'machine':
-            if not self.promoting:
-                move = self.players[self.turn].move(self.board)
-            else:
-                prom = self.players[self.turn].promote(
-                    board=self.board,
-                    pawn=self.pawn_prom,
-                    promotion_selector=self.promotion
-                )
-                self.promoting = False
-                self.pawn_prom = None
+        # handle turn: move or promote
+        is_machine = self.players[self.turn].type == 'machine'
+        if not self.is_promoting and (grid_click_pos or is_machine):
+            mpos = self.board.px_to_grid(Coords(x=grid_click_pos[0], y=grid_click_pos[1])) \
+                if grid_click_pos is not None else None
+            move = self.players[self.turn].move(
+                self.board,
+                mpos
+            )
+        elif self.is_promoting and (promotion_click_pos or is_machine):
+            prom = self.players[self.turn].promote(
+                board=self.board,
+                pawn=self.pawn_prom,
+                promotion_selector=self.promotion,
+                pos=promotion_click_pos if promotion_click_pos else None
+            )
+            self.is_promoting = False
+            self.pawn_prom = None
 
+        # check if there are any promotions to be done
         self.pawn_prom = self.board.promotions(self.turn)
         if self.pawn_prom:
-            self.promoting = True
+            self.is_promoting = True
         if move:
             self.last_move = move
 
-        if not self.promoting and (move or prom):
+        # next turn happens when there are NO PENDING
+        # PROMOTIONS and a MOVE or a PROMOTION took place.
+        if not self.is_promoting and (move or prom):
             self.log_turn(prom)
             self.turn = Color.next(self.turn)
 

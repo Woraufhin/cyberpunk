@@ -27,6 +27,7 @@ class Player:
     def promote(self, board, pawn, promotion_selector=None, pos=None):
         pass
 
+
 class HumanPlayer(Player):
     type = 'human'
 

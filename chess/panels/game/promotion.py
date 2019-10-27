@@ -1,28 +1,19 @@
 import math
 import logging
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import pygame as pg
 
 import chess.settings as s
 from chess.panels.panel import Panel
+from chess.panels.backdrop import Backdrop
 from chess.panels.intro.button import Button
 
 from chess.utils.coords import Coords
-from chess.utils.typewriter import Typewriter, TypewriterConfig
 
 
 logger = logging.getLogger(Path(__file__).stem)
-
-
-@dataclass(eq=False)
-class Backdrop(Panel):
-    color: tuple = s.BLACK
-    alpha: int = 150
-
-    def __post_init__(self):
-        super().__post_init__()
 
 
 @dataclass(eq=False)
@@ -35,6 +26,11 @@ class Promotion(Panel):
     frame_offset: int = s.TILESIZE * 2
 
     def __post_init__(self):
+        self.backdrop = Backdrop(
+            sprite_group=self.sprite_group,
+            pos=Coords(x=0, y=0),
+            size=Coords(x=s.GRIDWIDTH, y=s.GRIDHEIGHT)
+        )
         super().__post_init__()
         self.frame, self.f_rect = self.draw_frame()
         self.buttons = self.draw_buttons()

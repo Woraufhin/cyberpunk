@@ -1,3 +1,4 @@
+import math
 import logging
 from pathlib import Path
 from dataclasses import dataclass, field
@@ -6,6 +7,8 @@ import pygame as pg
 
 import chess.settings as s
 from chess.panels.panel import Panel
+from chess.panels.intro.button import Button
+
 from chess.utils.coords import Coords
 from chess.utils.typewriter import Typewriter, TypewriterConfig
 
@@ -16,7 +19,7 @@ logger = logging.getLogger(Path(__file__).stem)
 @dataclass(eq=False)
 class Backdrop(Panel):
     color: tuple = s.BLACK
-    alpha: int = 100
+    alpha: int = 150
 
     def __post_init__(self):
         super().__post_init__()
@@ -25,14 +28,39 @@ class Backdrop(Panel):
 @dataclass(eq=False)
 class Promotion(Panel):
 
-    title = 'Promotion'
+    title: str = 'Promotion'
     color: tuple = s.BLACK
+    draw_px_art: bool = False
     margin: int = 12
     frame_offset: int = s.TILESIZE * 2
 
     def __post_init__(self):
         super().__post_init__()
-        self.frame, self.rect = self.draw_frame()
+        self.frame, self.f_rect = self.draw_frame()
+        self.buttons = self.draw_buttons()
+
+    def update(self):
+        mpos = self.scale_mouse(pg.mouse.get_pos())
+        for button in self.buttons:
+            if button.rect.collidepoint(mpos):
+                button.hovering = True
+            else:
+                button.hovering = False
+            button.update()
+
+    def scale_mouse(self, mpos):
+        mpos = Coords(x=mpos[0], y=mpos[1])
+        offset = Coords(x=self.rect.x, y=self.rect.y) + Coords(x=self.margin, y=self.frame_offset)
+        return mpos - offset
+
+    def click(self, mpos):
+        action = None
+        mpos = self.scale_mouse(mpos)
+        for button in self.buttons:
+            if button.rect.collidepoint(mpos):
+                action = button.on_click()
+        if action:
+            return action
 
     def draw_frame(self):
         rect = pg.Rect(
@@ -45,13 +73,40 @@ class Promotion(Panel):
         frame.fill(s.BLACK)
         return frame, rect
 
-    def draw_pixel_art(self):
-        if self.draw_px_art:
-            px = s.TILESIZE / 4
-            pg.draw.rect(self.image, self.parent_color, (0, 0, px, px))
-            pg.draw.rect(self.image, self.parent_color, (0, self.image.get_height() - px, px, px))
-            pg.draw.rect(
-                self.image, self.parent_color,
-                (self.image.get_width() - px, self.image.get_height() - px, px, px)
+    def draw_buttons(self):
+        w, h = self.frame.get_width(), self.frame.get_height()
+        size = Coords(x=2.4, y=2.4)
+        return [
+            Button(
+                surface=self.frame,
+                pos=Coords(x=0, y=0),
+                size=size,
+                value='queen',
+                text='Q'
+            ),
+            Button(
+                surface=self.frame,
+                pos=Coords(x=2.4, y=0),
+                size=size,
+                value='rook',
+                text='R'
+            ),
+            Button(
+                surface=self.frame,
+                pos=Coords(x=0, y=2.4),
+                size=size,
+                value='bishop',
+                text='B'
+            ),
+            Button(
+                surface=self.frame,
+                pos=Coords(x=2.4, y=2.4),
+                size=size,
+                value='knight',
+                text='K'
             )
-            pg.draw.rect(self.image, self.parent_color, (self.image.get_width() - px, 0, px, px))
+        ]
+
+    @property
+    def promotions(self):
+        return ['queen', 'rook', 'bishop', 'knight']

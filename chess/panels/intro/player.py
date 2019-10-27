@@ -84,6 +84,7 @@ class PlayerMenu:
                 pos=Coords(x=8, y=2),
                 size=size,
                 text='human',
+                value='human',
                 desc="""A typical human scum. Tends to have 4 legs and a gender of her choice.
 
 They love to watch the fire burn and have Vietnam flashbacks."""
@@ -93,6 +94,7 @@ They love to watch the fire burn and have Vietnam flashbacks."""
                 pos=Coords(x=8, y=3),
                 size=size,
                 text='random AI',
+                value='random AI',
                 desc="""Cute AI that shoots bullets in the dark.
 I\'m actually going to tell you what it does:
 
@@ -110,6 +112,7 @@ I\'m actually going to tell you what it does:
                 pos=Coords(x=8, y=4),
                 size=size,
                 text='back',
+                value='back',
                 config=TypewriterConfig(
                     size=16,
                     color=s.GREEN,

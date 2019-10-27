@@ -23,15 +23,15 @@ class Intro(State):
 
     next = 'GAME'
     greet = {
-            1: [False, ('[DEBUG] Loading protocol...', LogType.DEBUG)],
-            3: [False, (
-                '[WARNING] Cannot load "assets/fonts/stolen.ttf". Proceeding with default.',
-                LogType.WARNING
-            )],
-            3.2: [False, (f'[DEBUG] Displaying <State: Intro> interface.', LogType.DEBUG)],
-            3.3: [False, ('[DEBUG] Invoke <func: self.say_hi>', LogType.DEBUG)],
-            4: [False, ('[INFO] Hello person, I\'m beep boop.',)],
-            4.4: [False, ('[DEBUG] Waiting for input...', LogType.DEBUG)]
+        1: [False, ('[DEBUG] Loading protocol...', LogType.DEBUG)],
+        3: [False, (
+            '[WARNING] Cannot load "assets/fonts/stolen.ttf". Proceeding with default.',
+            LogType.WARNING
+        )],
+        3.2: [False, (f'[DEBUG] Displaying <State: Intro> interface.', LogType.DEBUG)],
+        3.3: [False, ('[DEBUG] Invoke <func: self.say_hi>', LogType.DEBUG)],
+        4: [False, ('[INFO] Hello person, I\'m beep boop.',)],
+        4.4: [False, ('[DEBUG] Waiting for input...', LogType.DEBUG)]
     }
     title: Union[None, 'Title'] = None
     menu: Union[None, 'Menu'] = None

@@ -21,9 +21,11 @@ class Player:
     def __init__(self, color):
         self.color = color
 
-    def move(self, grid, pos):
+    def move(self, grid, pos=None):
         pass
 
+    def promote(self, board, pawn, promotion_selector=None, pos=None):
+        pass
 
 class HumanPlayer(Player):
     type = 'human'
@@ -32,7 +34,7 @@ class HumanPlayer(Player):
         super().__init__(color)
         self.considering = None
 
-    def move(self, grid, pos):
+    def move(self, grid, pos=None):
         move = False
         moves = grid.get_possible_moves(grid.grid, self.color)
         sel = grid.select(pos, self.color)
@@ -47,6 +49,11 @@ class HumanPlayer(Player):
             self.considering = None
         return move
 
+    def promote(self, board, pawn, promotion_selector=None, pos=None):
+        pick = promotion_selector.click(pos)
+        board.handle_promotions(pawn, pick)
+        return pick
+
 
 class RandomAI(Player):
     type = 'machine'
@@ -54,7 +61,12 @@ class RandomAI(Player):
     def __init__(self, color):
         super().__init__(color)
 
-    def move(self, grid, pos):
+    def move(self, grid, pos=None):
         cho = choice(grid.get_possible_moves(grid.grid, self.color))
         grid.move(from_=cho[0], to=cho[1])
         return cho
+
+    def promote(self, board, pawn, promotion_selector=None, pos=None):
+        pick = choice(promotion_selector.promotions)
+        board.handle_promotions(pawn, pick)
+        return pick

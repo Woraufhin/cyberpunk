@@ -88,19 +88,22 @@ class Menu(pg.sprite.Sprite):
                 surface=self.image,
                 pos=Coords(x=1, y=8),
                 size=size,
-                text='PLAY'
+                text='PLAY',
+                value='PLAY'
             ),
             Button(
                 surface=self.image,
                 pos=Coords(x=8,y=8),
                 size=size,
-                text='CONFIG'
+                text='CONFIG',
+                value='CONFIG'
             ),
             Button(
                 surface=self.image,
                 pos=Coords(x=15, y=8),
                 size=size,
-                text='QUIT'
+                text='QUIT',
+                value='QUIT'
             )
         ]
 

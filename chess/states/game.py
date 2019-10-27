@@ -14,7 +14,7 @@ from chess.utils.coords import Coords
 from chess.player import PlayerFactory
 from chess.pieces import Color
 from chess.panels.console import Console
-from chess.utils.typewriter import TypewriterConfig
+from chess.utils.typewriter import TypewriterConfig, LogType
 
 
 logger = logging.getLogger(Path(__file__).stem)
@@ -70,16 +70,15 @@ class Game(State):
         )
         self.promotion = Promotion(
             sprite_group=self.promotion_sprites,
-            pos=Coords(x=6, y=7),
-            size=Coords(x=6, y=6),
-            color=s.WHITE,
-            parent_color=s.DARKGREY,
-            margin=6,
-            frame_offset=s.TILESIZE,
+            pos=Coords(x=13, y=7),
+            size=Coords(x=5, y=6),
+            color=s.LIGHTGREY,
+            margin=4,
+            frame_offset=s.TILESIZE+4,
             tp_config=TypewriterConfig(
                 padding=5,
                 size=22,
-                color=s.DARKGREEN,
+                color=s.WHITE,
                 surface_color=s.DARKGREY,
                 pos='midtop'
             )
@@ -97,7 +96,7 @@ class Game(State):
             screen.fill(s.BLACK)
         self.sprites.update()
         rects = self.sprites.draw(screen)
-        if self.promoting:
+        if self.promoting and self.players[self.turn].type == 'human':
             self.promotion_sprites.update()
             rects.extend(self.promotion_sprites.draw(screen))
         return rects
@@ -110,55 +109,80 @@ class Game(State):
             pg.draw.line(screen, s.LIGHTGREY, (x, 0), (x, s.HEIGHT))
         for y in range(0, s.HEIGHT, s.TILESIZE):
             pg.draw.line(screen, s.LIGHTGREY, (0, y), (s.WIDTH, y))
-        for piece in self.board.piece_sprites:
-            pg.draw.rect(self.board.image, s.RED, piece.rect, 1)
 
     def events(self, events):
         if self.check_mate():
             self.console.log(f'Check mate! WINNER: {Color.next(self.turn)}')
+        move = None
+        prom = False
         grid_click_pos = None
-
+        promotion_click_pos = None
         for event in events:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_d:
                     self.debug = not self.debug
             if event.type == pg.MOUSEBUTTONUP and not self.promoting and \
                     self.board.rect.collidepoint(event.pos):
-                logger.info('clicking grid')
                 grid_click_pos = event.pos
             if event.type == pg.MOUSEBUTTONUP and self.promoting and \
                     self.promotion.rect.collidepoint(event.pos):
-                logger.info('clicking promotion')
+                promotion_click_pos = event.pos
 
         # if it's a "human" turn, then check if she has clicked on the board
         #     if she did, then proceed with human turn
         # else it's an AI, so just move.
         move = None
-        if self.players[self.turn].type == 'human' \
-                and grid_click_pos is not None:
-            move = self.players[self.turn].move(
-                self.board,
-                self.board.px_to_grid(
-                    Coords(x=grid_click_pos[0], y=grid_click_pos[1])
+        if self.players[self.turn].type == 'human':
+            if not self.promoting and grid_click_pos:
+                move = self.players[self.turn].move(
+                    self.board,
+                    self.board.px_to_grid(
+                        Coords(x=grid_click_pos[0], y=grid_click_pos[1])
+                    )
                 )
-            )
+            elif self.promoting and promotion_click_pos:
+                prom = self.players[self.turn].promote(
+                    board=self.board,
+                    pawn=self.pawn_prom,
+                    promotion_selector=self.promotion,
+                    pos=promotion_click_pos
+                )
+                self.promoting = False
+                self.pawn_prom = None
+
         elif self.players[self.turn].type == 'machine':
-            move = self.players[self.turn].move(self.board, None)
+            if not self.promoting:
+                move = self.players[self.turn].move(self.board)
+            else:
+                prom = self.players[self.turn].promote(
+                    board=self.board,
+                    pawn=self.pawn_prom,
+                    promotion_selector=self.promotion
+                )
+                self.promoting = False
+                self.pawn_prom = None
 
-        if self.board.promotions(self.turn):
-            logger.info('Setting self.promoting = True')
+        self.pawn_prom = self.board.promotions(self.turn)
+        if self.pawn_prom:
             self.promoting = True
-
         if move:
-            self.log_move(move)
+            self.last_move = move
+
+        if not self.promoting and (move or prom):
+            self.log_turn(prom)
             self.turn = Color.next(self.turn)
 
-    def log_move(self, move):
-        king = self.board.get_king(Color.next(self.turn))
+    def log_prom(self, prom):
+        for _ in range(100):
+            self.console.log(f'[DEBUG] {self.turn} has promoted a pawn to {prom}!')
+
+    def log_turn(self, prom):
         self.moves += 1
         self.move.log(f'[{self.moves:03}]')
-        msg = str(move)
-        if king.is_checked:
+        msg = str(self.last_move)
+        if prom:
+            msg += ' promoting!'
+        if self.board.is_king_checked(self.board.grid, Color.next(self.turn)):
             msg += ' check!'
         self.move.log(msg)
         self.move.log('')

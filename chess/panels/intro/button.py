@@ -18,6 +18,7 @@ class Button:
     pos: 'Coords'
     size: 'Coords'
     text: str
+    value: str
     config: 'TypewriterConfig' = TypewriterConfig(
         size=32,
         color=s.GREEN,
@@ -59,7 +60,7 @@ class Button:
         )
 
     def on_click(self):
-        return self.text
+        return self.value
 
 
 @dataclass

@@ -72,7 +72,7 @@ class Board(pg.sprite.Sprite):
         return pos_moves
 
     def is_king_checked(self, grid, color):
-        rival_color = Color.white if color == Color.black else Color.black
+        rival_color = Color.next(color)
         for p in self.get_pieces_for_color(grid, rival_color):
             for move in p.possible_moves(grid):
                 piece_to = self.get_piece_at(move, grid)
@@ -125,12 +125,28 @@ class Board(pg.sprite.Sprite):
         promo_row = 0 if color == Color.white else 7
         for piece in self.get_pieces_for_color(grid, color):
             if piece.type == PieceType.pawn and piece.pos.row == promo_row:
-                logger.info('Piece: %r is promoting', piece)
                 return piece
         return None
 
     def handle_promotions(self, pawn, new_piece):
-        pass
+        new_type = PieceType[new_piece]
+        num = self.get_latest_id_for_piece(new_type, pawn.color)
+        uid = (num + 1) * 100 + pawn.color.value * 10 + new_type.value
+        pid = PieceId(
+            num=uid,
+            color=pawn.color,
+            type=new_type
+        )
+        new_piece = PieceFactory.make(pid, pawn.pos)
+
+        # update grid
+        self.grid[pawn.row, pawn.col] = new_piece.pid
+        del self.pieces[pawn.pid]
+        self.pieces[new_piece.pid] = new_piece
+
+        # update sprites
+        self.sprites.remove(pawn)
+        self.sprites.add(new_piece)
 
     def select(self, pos: Coords, player_color: str):
         """ Selects a piece on the board """
@@ -267,6 +283,15 @@ class Board(pg.sprite.Sprite):
 
     def set_console(self, console):
         self.console = console
+
+    def get_latest_id_for_piece(self, type: PieceType, color: Color):
+        latest = 0
+        for piece in self.get_pieces_for_color(self.grid, color):
+            if piece.type == type:
+                num = piece.pid // 100
+                if num > latest:
+                    latest = num
+        return latest
 
     @staticmethod
     def simulate_move(grid, move) -> np.array:

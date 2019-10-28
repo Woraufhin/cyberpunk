@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import ClassVar, Union, List, Dict
+from typing import ClassVar, Union, Dict
 
 import pygame as pg
 
@@ -12,10 +12,10 @@ from chess.panels.game.board import Board
 from chess.panels.game.promotion import Promotion
 from chess.panels.game.game_over import GameOver
 from chess.utils.coords import Coords
-from chess.player import PlayerFactory
+from chess.player import Player, PlayerFactory
 from chess.pieces import Color
 from chess.panels.console import Console
-from chess.utils.typewriter import TypewriterConfig, LogType
+from chess.utils.typewriter import TypewriterConfig
 
 
 logger = logging.getLogger(Path(__file__).stem)
@@ -35,7 +35,7 @@ class Game(State):
     )
     is_promoting: bool = False
     is_game_over: bool = False
-    players: Dict[Color, 'chess.player.Player'] = field(default_factory=dict)
+    players: Dict[Color, Player] = field(default_factory=dict)
     turn: Union[None, Color] = None
     moves: int = 0
     config: dict = field(default_factory=dict)
@@ -72,16 +72,7 @@ class Game(State):
             sprite_group=self.game_over_sprites,
             pos=Coords(x=13, y=7),
             size=Coords(x=5, y=6),
-            color=s.LIGHTGREY,
-            margin=4,
-            frame_offset=s.TILESIZE+4,
-            tp_config=TypewriterConfig(
-                padding=5,
-                size=22,
-                color=s.WHITE,
-                surface_color=s.DARKGREY,
-                pos='midtop'
-            )
+            color=s.LIGHTGREY
         )
         self.promotion = Promotion(
             sprite_group=self.promotion_sprites,
@@ -145,7 +136,7 @@ class Game(State):
                     # check if click was inside chess grid
                     grid_click_pos = event.pos
 
-        if self.check_mate():
+        if self.check_mate() or self.draw():
             self.is_game_over = True
             return  # no more mr nice guy
 
@@ -199,4 +190,9 @@ class Game(State):
     def check_mate(self):
         king = self.board.get_king(self.turn)
         return king.is_checked and not \
+            self.board.get_possible_moves(self.board.grid, self.turn)
+
+    def draw(self):
+        king = self.board.get_king(self.turn)
+        return not king.is_checked and not \
             self.board.get_possible_moves(self.board.grid, self.turn)

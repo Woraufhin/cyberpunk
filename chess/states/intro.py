@@ -128,13 +128,12 @@ class Intro(State):
             elif event.type == pg.MOUSEBUTTONUP:
                 action = self.menu.click(event.pos)
         self.persist = self.menu.config
-        if action:
-            if action == 'PLAY':
-                if self.check():
-                    self.next = 'GAME'
-                    self.done = True
-            elif action == 'QUIT':
-                self.quit = True
+        if action == 'PLAY':
+            if self.check():
+                self.next = 'GAME'
+                self.done = True
+        elif action == 'QUIT':
+            self.quit = True
 
     def check(self):
         if len(self.persist['player']) != 2:

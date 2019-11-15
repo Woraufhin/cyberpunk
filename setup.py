@@ -4,10 +4,9 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
-    name='cyberpunk',
+    name='chrisis',
     version='0.01',
     install_requires=requirements,
-    packages=[''],
     url='https://github.com/Woraufhin/cyberpunk',
     license='MIT',
     author='Juan Schandin',

@@ -27,7 +27,7 @@ def main():
         'INTRO': Intro(),
         'GAME': Game()
     }
-    director.setup_states(state_dict, "INTRO")
+    director.setup_states(state_dict, 'INTRO')
     director.main()
 
 
